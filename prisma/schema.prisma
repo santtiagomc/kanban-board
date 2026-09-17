@@ -1,0 +1,126 @@
+// Schema de Prisma: describe la forma de los datos.
+// A partir de este archivo, Prisma genera dos cosas:
+//   1. El SQL que crea las tablas en PostgreSQL (las "migraciones")
+//   2. Los tipos de TypeScript que usás al programar
+// Docs: https://pris.ly/d/prisma-schema
+
+// Dónde escribir el cliente generado. En Prisma 7 el cliente es codigo TypeScript
+// que vive en tu proyecto (no escondido en node_modules), por eso hay que decirle
+// la ruta. Esa carpeta esta en .gitignore: es codigo generado, nunca se edita a mano.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Solo declara el motor de base de datos.
+// La URL de conexion vive en prisma7.config.ts, que la lee del archivo .env
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// USUARIO
+// ---------------------------------------------------------------------------
+model User {
+  id String @id @default(cuid())
+
+  email String @unique // @unique => no puede haber dos usuarios con el mismo email
+
+  // Nunca guardamos la contraseña en texto plano, solo su hash (bcrypt).
+  // El hash es irreversible: sirve para verificar, no para recuperar.
+  passwordHash String
+
+  name String? // El "?" la hace opcional (en SQL: acepta NULL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Prisma actualiza esta fecha sola en cada cambio
+
+  // Lado "muchos" de la relación: un usuario tiene muchos tableros.
+  // Este campo NO crea una columna en la tabla; es solo para poder escribir
+  // consultas como: prisma.user.findUnique({ include: { boards: true } })
+  boards Board[]
+}
+
+// ---------------------------------------------------------------------------
+// TABLERO
+// ---------------------------------------------------------------------------
+model Board {
+  id    String @id @default(cuid())
+  title String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Clave foránea hacia User. Este par de líneas es el patrón que vas a repetir
+  // en todas las relaciones:
+  //   - ownerId: la columna real que se guarda en la tabla
+  //   - owner:   el "atajo" para acceder al objeto User completo desde el código
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  columns Column[]
+
+  // Un índice acelera los filtros por esta columna. Como la consulta más común
+  // va a ser "traeme los tableros del usuario X", vale la pena tenerlo.
+  @@index([ownerId])
+}
+
+// ---------------------------------------------------------------------------
+// COLUMNA (la lista: "Por hacer", "En progreso", "Hecho")
+// ---------------------------------------------------------------------------
+model Column {
+  id    String @id @default(cuid())
+  title String
+
+  // Orden de izquierda a derecha: 0, 1, 2...
+  // Es imprescindible: una base de datos NO garantiza el orden de las filas,
+  // así que el orden hay que guardarlo explícitamente.
+  //
+  // Nota: a propósito NO ponemos @@unique([boardId, position]). Sería tentador
+  // ("dos columnas no pueden estar en la misma posición"), pero al reordenar
+  // habría un instante con posiciones repetidas y la base rechazaría el cambio.
+  position Int
+
+  boardId String
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  cards Card[]
+
+  @@index([boardId])
+}
+
+// ---------------------------------------------------------------------------
+// TARJETA (la tarea)
+// ---------------------------------------------------------------------------
+model Card {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime? // Fecha límite, opcional
+  position    Int // Orden dentro de su columna, de arriba hacia abajo
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  columnId String
+  column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  subtasks Subtask[]
+
+  @@index([columnId])
+}
+
+// ---------------------------------------------------------------------------
+// SUBTAREA (acá caen las que aceptás de las sugerencias de IA)
+// ---------------------------------------------------------------------------
+model Subtask {
+  id       String  @id @default(cuid())
+  title    String
+  done     Boolean @default(false)
+  position Int
+
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+}
