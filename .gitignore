@@ -32,10 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-# ...pero la plantilla sin secretos sí se versiona, para que otros sepan qué variables hacen falta
+# ...but the template (no secrets) is committed so others know which variables are required
 !.env.example
 
-# skills de herramientas (documentación generada, se reinstala con skills-lock.json)
+# tool skills (generated docs, reinstallable from skills-lock.json)
 /.claude/skills
 /.windsurf/skills
 /.agents

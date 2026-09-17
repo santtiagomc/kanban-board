@@ -1,48 +1,48 @@
-// Schema de Prisma: describe la forma de los datos.
-// A partir de este archivo, Prisma genera dos cosas:
-//   1. El SQL que crea las tablas en PostgreSQL (las "migraciones")
-//   2. Los tipos de TypeScript que usás al programar
+// Prisma schema: describes the shape of the data.
+// From this file Prisma generates two things:
+//   1. The SQL that creates the tables in PostgreSQL (the "migrations")
+//   2. The TypeScript types used throughout the app
 // Docs: https://pris.ly/d/prisma-schema
 
-// Dónde escribir el cliente generado. En Prisma 7 el cliente es codigo TypeScript
-// que vive en tu proyecto (no escondido en node_modules), por eso hay que decirle
-// la ruta. Esa carpeta esta en .gitignore: es codigo generado, nunca se edita a mano.
+// Where to write the generated client. In Prisma 7 the client is TypeScript code
+// that lives inside the project (not hidden in node_modules), so the path is required.
+// That folder is in .gitignore: it's generated code and must never be edited by hand.
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
-// Solo declara el motor de base de datos.
-// La URL de conexion vive en prisma7.config.ts, que la lee del archivo .env
+// Only declares the database engine.
+// The connection URL lives in prisma7.config.ts, which reads it from .env
 datasource db {
   provider = "postgresql"
 }
 
 // ---------------------------------------------------------------------------
-// USUARIO
+// USER
 // ---------------------------------------------------------------------------
 model User {
   id String @id @default(cuid())
 
-  email String @unique // @unique => no puede haber dos usuarios con el mismo email
+  email String @unique // @unique => two users can't share the same email
 
-  // Nunca guardamos la contraseña en texto plano, solo su hash (bcrypt).
-  // El hash es irreversible: sirve para verificar, no para recuperar.
+  // The password is never stored in plain text, only its bcrypt hash.
+  // A hash is one-way: it can verify a password, but not recover it.
   passwordHash String
 
-  name String? // El "?" la hace opcional (en SQL: acepta NULL)
+  name String? // "?" makes the field optional (NULL allowed in SQL)
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt // Prisma actualiza esta fecha sola en cada cambio
+  updatedAt DateTime @updatedAt // Prisma refreshes this timestamp on every update
 
-  // Lado "muchos" de la relación: un usuario tiene muchos tableros.
-  // Este campo NO crea una columna en la tabla; es solo para poder escribir
-  // consultas como: prisma.user.findUnique({ include: { boards: true } })
+  // "Many" side of the relation: a user has many boards.
+  // This field does NOT create a database column; it only enables queries like:
+  // prisma.user.findUnique({ include: { boards: true } })
   boards Board[]
 }
 
 // ---------------------------------------------------------------------------
-// TABLERO
+// BOARD
 // ---------------------------------------------------------------------------
 model Board {
   id    String @id @default(cuid())
@@ -51,34 +51,33 @@ model Board {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Clave foránea hacia User. Este par de líneas es el patrón que vas a repetir
-  // en todas las relaciones:
-  //   - ownerId: la columna real que se guarda en la tabla
-  //   - owner:   el "atajo" para acceder al objeto User completo desde el código
+  // Foreign key to User. This pair of lines is the pattern repeated in every relation:
+  //   - ownerId: the actual column stored in the table
+  //   - owner:   a shortcut to reach the full User object from code
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   columns Column[]
 
-  // Un índice acelera los filtros por esta columna. Como la consulta más común
-  // va a ser "traeme los tableros del usuario X", vale la pena tenerlo.
+  // An index speeds up filtering by this column. The most common query will be
+  // "get all boards for user X", so it's worth having.
   @@index([ownerId])
 }
 
 // ---------------------------------------------------------------------------
-// COLUMNA (la lista: "Por hacer", "En progreso", "Hecho")
+// COLUMN (a list: "To do", "In progress", "Done")
 // ---------------------------------------------------------------------------
 model Column {
   id    String @id @default(cuid())
   title String
 
-  // Orden de izquierda a derecha: 0, 1, 2...
-  // Es imprescindible: una base de datos NO garantiza el orden de las filas,
-  // así que el orden hay que guardarlo explícitamente.
+  // Left-to-right order: 0, 1, 2...
+  // Required because a database does NOT guarantee row order,
+  // so the order has to be stored explicitly.
   //
-  // Nota: a propósito NO ponemos @@unique([boardId, position]). Sería tentador
-  // ("dos columnas no pueden estar en la misma posición"), pero al reordenar
-  // habría un instante con posiciones repetidas y la base rechazaría el cambio.
+  // Note: we intentionally do NOT add @@unique([boardId, position]). It's tempting
+  // ("two columns can't share a position"), but while reordering there's a moment
+  // with duplicate positions and the database would reject the update.
   position Int
 
   boardId String
@@ -90,14 +89,14 @@ model Column {
 }
 
 // ---------------------------------------------------------------------------
-// TARJETA (la tarea)
+// CARD (a task)
 // ---------------------------------------------------------------------------
 model Card {
   id          String    @id @default(cuid())
   title       String
   description String?
-  dueDate     DateTime? // Fecha límite, opcional
-  position    Int // Orden dentro de su columna, de arriba hacia abajo
+  dueDate     DateTime? // Optional deadline
+  position    Int // Top-to-bottom order within its column
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -111,7 +110,7 @@ model Card {
 }
 
 // ---------------------------------------------------------------------------
-// SUBTAREA (acá caen las que aceptás de las sugerencias de IA)
+// SUBTASK (where accepted AI suggestions are stored)
 // ---------------------------------------------------------------------------
 model Subtask {
   id       String  @id @default(cuid())

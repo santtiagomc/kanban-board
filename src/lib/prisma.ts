@@ -1,5 +1,5 @@
-// Cliente de Prisma: el único punto del proyecto donde se abre la conexión
-// a la base de datos. Todo el resto del código importa `prisma` desde acá.
+// Prisma client: the single place in the project where the database
+// connection is created. The rest of the code imports `prisma` from here.
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
@@ -7,31 +7,29 @@ import { PrismaClient } from "@/generated/prisma/client";
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL;
 
-  // Fallar temprano y con un mensaje claro es mucho mejor que un error críptico
-  // de conexión más adelante.
+  // Failing early with a clear message beats a cryptic connection error later.
   if (!connectionString) {
     throw new Error(
-      "Falta la variable DATABASE_URL. Copiá .env.example a .env y completala.",
+      "Missing DATABASE_URL. Copy .env.example to .env and fill it in.",
     );
   }
 
-  // Prisma 7 ya no trae su propio motor de conexión: usa el driver `pg`,
-  // el estándar de Node para PostgreSQL, a través de este adaptador.
+  // Prisma 7 no longer ships its own connection engine: it uses `pg`,
+  // Node's standard PostgreSQL driver, through this adapter.
   const adapter = new PrismaPg({ connectionString });
 
   return new PrismaClient({ adapter });
 }
 
 // ---------------------------------------------------------------------------
-// Por qué este "globalThis" en vez de un simple `new PrismaClient()`:
+// Why `globalThis` instead of a plain `new PrismaClient()`:
 //
-// En desarrollo, Next.js recarga los módulos cada vez que guardás un archivo.
-// Si creáramos un cliente nuevo en cada recarga, en pocos minutos tendrías
-// decenas de conexiones abiertas y Postgres terminaría rechazándolas
-// ("too many clients already"). Guardarlo en `globalThis` hace que sobreviva
-// a las recargas y siempre se reutilice el mismo.
+// In development, Next.js reloads modules every time you save a file.
+// Creating a new client on each reload would pile up open connections within
+// minutes until Postgres starts rejecting them ("too many clients already").
+// Storing it on `globalThis` lets it survive reloads so the same one is reused.
 //
-// En producción no hace falta porque el módulo se carga una sola vez.
+// Not needed in production, where the module is only loaded once.
 // ---------------------------------------------------------------------------
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
