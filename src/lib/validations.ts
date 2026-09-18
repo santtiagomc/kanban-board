@@ -35,3 +35,14 @@ export const registerSchema = z.object({
 // Infers the TypeScript type from the schema above, so the rules and the types
 // can never drift apart: { name?: string; email: string; password: string }
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+// Sign-in is deliberately looser than sign-up: the rules that apply here are
+// whatever they were when the account was created. Checking "at least 8
+// characters" on login would only leak that the stored password is longer.
+// The real check is comparing against the stored hash.
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email("Invalid credentials")),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
