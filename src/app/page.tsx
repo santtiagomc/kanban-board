@@ -18,10 +18,15 @@ export default async function HomePage() {
       </p>
 
       {session?.user ? (
-        <p className="text-slate-700">
-          Signed in as{" "}
-          <span className="font-medium">{session.user.email}</span>
-        </p>
+        <div className="flex w-full max-w-xs flex-col gap-3">
+          <p className="text-slate-700">
+            Signed in as{" "}
+            <span className="font-medium">{session.user.email}</span>
+          </p>
+          <Link href="/boards" className={`${buttonClass} text-center`}>
+            Go to my boards
+          </Link>
+        </div>
       ) : (
         <div className="flex w-full max-w-xs flex-col gap-3">
           <Link href="/login" className={`${buttonClass} text-center`}>

@@ -84,7 +84,7 @@ export function RegisterForm() {
       return;
     }
 
-    router.push("/");
+    router.push("/boards");
     router.refresh();
   }
 

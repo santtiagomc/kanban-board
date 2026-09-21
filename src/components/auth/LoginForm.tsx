@@ -48,7 +48,7 @@ export function LoginForm() {
 
     // The session cookie now exists, but pages rendered on the server were
     // built before it. refresh() asks the server to re-render them.
-    router.push("/");
+    router.push("/boards");
     router.refresh();
   }
 
