@@ -46,3 +46,15 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+// Used for both creating and renaming a board: the only editable field is the
+// title, and the rules are the same either way.
+export const boardSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Title is required")
+    .max(100, "Title must be 100 characters or fewer"),
+});
+
+export type BoardInput = z.infer<typeof boardSchema>;
