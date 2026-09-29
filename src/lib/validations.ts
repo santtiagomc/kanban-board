@@ -58,3 +58,24 @@ export const boardSchema = z.object({
 });
 
 export type BoardInput = z.infer<typeof boardSchema>;
+
+// Used for creating and renaming a column. Shorter than a board title because
+// column headers are narrow on screen.
+export const columnSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Title is required")
+    .max(50, "Title must be 50 characters or fewer"),
+});
+
+export type ColumnInput = z.infer<typeof columnSchema>;
+
+// Reordering sends the complete list of column ids in their new order.
+// Sending the whole list (instead of "move X to position 2") means the server
+// never has to guess what the other columns should look like.
+export const reorderColumnsSchema = z.object({
+  orderedIds: z.array(z.string().min(1)).min(1, "orderedIds cannot be empty"),
+});
+
+export type ReorderColumnsInput = z.infer<typeof reorderColumnsSchema>;
