@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/AppHeader";
+import { BoardColumns } from "@/components/columns/BoardColumns";
 import { getBoardForUser } from "@/lib/boards";
 
 // In Next.js 15+ params is a Promise and has to be awaited, the same as in the
@@ -46,22 +47,16 @@ export default async function BoardPage({ params }: Props) {
           {board.title}
         </h1>
 
-        {/* Horizontal scroll: with many columns the page must not squeeze
-            them, it should scroll sideways like a real Kanban board. */}
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {board.columns.map((column) => (
-            <section
-              key={column.id}
-              className="flex w-72 shrink-0 flex-col rounded-lg bg-slate-100 p-3"
-            >
-              <h2 className="mb-3 px-1 text-sm font-semibold text-slate-700">
-                {column.title}
-              </h2>
-
-              <p className="px-1 text-sm text-slate-400">No cards yet</p>
-            </section>
-          ))}
-        </div>
+        {/* Only the id and title are handed to the client component: the
+            position is implicit in the array order, and sending fields the
+            UI doesn't use would just be extra weight in the page. */}
+        <BoardColumns
+          boardId={board.id}
+          columns={board.columns.map((column) => ({
+            id: column.id,
+            title: column.title,
+          }))}
+        />
       </main>
     </div>
   );
