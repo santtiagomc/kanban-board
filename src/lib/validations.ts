@@ -79,3 +79,39 @@ export const reorderColumnsSchema = z.object({
 });
 
 export type ReorderColumnsInput = z.infer<typeof reorderColumnsSchema>;
+
+// Used for creating and editing a card.
+export const cardSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Title is required")
+    .max(200, "Title must be 200 characters or fewer"),
+
+  // .nullish() means "optional, and null is allowed". The difference matters:
+  //   undefined (field absent) -> "don't change this"
+  //   null                     -> "clear this field"
+  description: z
+    .string()
+    .trim()
+    .max(2000, "Description must be 2000 characters or fewer")
+    .nullish(),
+
+  // z.coerce.date() turns the string the browser sends ("2026-12-25") into a
+  // real Date. Anything unparseable is rejected, and null passes through
+  // untouched - worth knowing, because new Date(null) in plain JavaScript
+  // silently returns 1 January 1970 instead of failing.
+  dueDate: z.coerce.date().nullish(),
+});
+
+export type CardInput = z.infer<typeof cardSchema>;
+
+// Same idea as reordering columns, with one extra power: an id may belong to
+// a different column of the same board, in which case the card is MOVED here.
+// That makes one endpoint cover both "reorder inside a column" and "drag to
+// another column".
+export const reorderCardsSchema = z.object({
+  orderedIds: z.array(z.string().min(1)),
+});
+
+export type ReorderCardsInput = z.infer<typeof reorderCardsSchema>;

@@ -27,7 +27,15 @@ export function getBoardForUser(boardId: string, userId: string) {
     where: { id: boardId, ownerId: userId },
     include: {
       // Without orderBy, Postgres may return columns in any order.
-      columns: { orderBy: { position: "asc" } },
+      columns: {
+        orderBy: { position: "asc" },
+        // Nested include: one query brings the board, its columns and their
+        // cards. The alternative - fetching cards per column - would fire one
+        // query per column, the classic "N+1 queries" problem.
+        include: {
+          cards: { orderBy: { position: "asc" } },
+        },
+      },
     },
   });
 }
