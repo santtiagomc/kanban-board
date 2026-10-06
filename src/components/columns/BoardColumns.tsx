@@ -3,12 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { AddCardForm } from "@/components/cards/AddCardForm";
+import { CardItem, type CardView } from "@/components/cards/CardItem";
 import { AddColumnForm } from "@/components/columns/AddColumnForm";
 import { ColumnHeader } from "@/components/columns/ColumnHeader";
 
 type Column = {
   id: string;
   title: string;
+  cards: CardView[];
 };
 
 type Props = {
@@ -92,7 +95,17 @@ export function BoardColumns({ boardId, columns }: Props) {
               isReordering={isReordering}
             />
 
-            <p className="px-1 text-sm text-slate-400">No cards yet</p>
+            <div className="flex flex-col gap-2">
+              {column.cards.map((card) => (
+                <CardItem key={card.id} card={card} />
+              ))}
+            </div>
+
+            {column.cards.length === 0 && (
+              <p className="px-1 py-2 text-sm text-slate-400">No cards yet</p>
+            )}
+
+            <AddCardForm columnId={column.id} />
           </section>
         ))}
 
