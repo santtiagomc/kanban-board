@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { AddCardForm } from "@/components/cards/AddCardForm";
 import { CardItem, type CardView } from "@/components/cards/CardItem";
+import { CardModal } from "@/components/cards/CardModal";
 import { AddColumnForm } from "@/components/columns/AddColumnForm";
 import { ColumnHeader } from "@/components/columns/ColumnHeader";
 
@@ -28,6 +29,11 @@ export function BoardColumns({ boardId, columns }: Props) {
 
   const [isReordering, setIsReordering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Which card's modal is open, or null for none. Keeping just the id (rather
+  // than the whole card) means the modal always fetches current data instead
+  // of showing a stale copy.
+  const [openCardId, setOpenCardId] = useState<string | null>(null);
 
   async function move(index: number, direction: -1 | 1) {
     const targetIndex = index + direction;
@@ -97,7 +103,11 @@ export function BoardColumns({ boardId, columns }: Props) {
 
             <div className="flex flex-col gap-2">
               {column.cards.map((card) => (
-                <CardItem key={card.id} card={card} />
+                <CardItem
+                  key={card.id}
+                  card={card}
+                  onOpen={() => setOpenCardId(card.id)}
+                />
               ))}
             </div>
 
@@ -111,6 +121,12 @@ export function BoardColumns({ boardId, columns }: Props) {
 
         <AddColumnForm boardId={boardId} />
       </div>
+
+      {/* Rendered only while a card is selected. Mounting it fresh each time
+          is what makes its "fetch on open" effect run again for every card. */}
+      {openCardId && (
+        <CardModal cardId={openCardId} onClose={() => setOpenCardId(null)} />
+      )}
     </>
   );
 }

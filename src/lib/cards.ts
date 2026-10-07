@@ -26,6 +26,19 @@ async function isCardOwnedBy(cardId: string, userId: string) {
   return card !== null;
 }
 
+// The full card, for the detail modal. Returns null when it isn't the user's.
+export function getCardForUser(cardId: string, userId: string) {
+  return prisma.card.findFirst({
+    where: { id: cardId, column: { board: { ownerId: userId } } },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      dueDate: true,
+    },
+  });
+}
+
 // Adds a card at the bottom of the column. Returns null when the column isn't
 // the user's.
 export async function createCard(

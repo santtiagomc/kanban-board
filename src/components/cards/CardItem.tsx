@@ -12,9 +12,22 @@ export type CardView = {
   hasDescription: boolean;
 };
 
-export function CardItem({ card }: { card: CardView }) {
+export function CardItem({
+  card,
+  onOpen,
+}: {
+  card: CardView;
+  onOpen: () => void;
+}) {
   return (
-    <article className="rounded-md border border-slate-200 bg-white p-2.5 shadow-sm">
+    // A <button>, not a <div> with onClick: it is focusable with Tab and
+    // responds to Enter and Space for free. A clickable div is invisible to
+    // anyone navigating by keyboard.
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full rounded-md border border-slate-200 bg-white p-2.5 text-left shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400"
+    >
       <p className="text-sm text-slate-800">{card.title}</p>
 
       {(card.dueLabel || card.hasDescription) && (
@@ -42,6 +55,6 @@ export function CardItem({ card }: { card: CardView }) {
           )}
         </div>
       )}
-    </article>
+    </button>
   );
 }

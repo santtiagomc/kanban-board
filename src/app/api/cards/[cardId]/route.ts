@@ -1,13 +1,34 @@
+// GET    /api/cards/:cardId - the full card, for the detail modal
 // PATCH  /api/cards/:cardId - edit title, description and due date
 // DELETE /api/cards/:cardId - delete the card and its subtasks
 
 import { getCurrentUserId, jsonError, readJson } from "@/lib/api-helpers";
-import { deleteCard, updateCard } from "@/lib/cards";
+import { deleteCard, getCardForUser, updateCard } from "@/lib/cards";
 import { cardSchema } from "@/lib/validations";
 
 type RouteContext = {
   params: Promise<{ cardId: string }>;
 };
+
+// The board page deliberately does NOT send every description: with many
+// cards that would be a lot of text nobody is reading yet. The modal asks for
+// the one card it needs, when it needs it.
+export async function GET(_request: Request, { params }: RouteContext) {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return jsonError("Unauthorized", 401);
+  }
+
+  const { cardId } = await params;
+  const card = await getCardForUser(cardId, userId);
+
+  if (!card) {
+    return jsonError("Card not found", 404);
+  }
+
+  return Response.json(card);
+}
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   const userId = await getCurrentUserId();
