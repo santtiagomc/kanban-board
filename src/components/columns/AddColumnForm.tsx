@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { inputClass, secondaryButtonClass } from "@/components/ui/styles";
+import { apiPost } from "@/lib/api-client";
 import { columnSchema } from "@/lib/validations";
 
 export function AddColumnForm({ boardId }: { boardId: string }) {
@@ -35,16 +36,12 @@ export function AddColumnForm({ boardId }: { boardId: string }) {
 
     setIsSubmitting(true);
 
-    const response = await fetch(`/api/boards/${boardId}/columns`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsed.data),
-    });
+    const result = await apiPost(`/api/boards/${boardId}/columns`, parsed.data);
 
     setIsSubmitting(false);
 
-    if (!response.ok) {
-      setError("Could not add the column");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 

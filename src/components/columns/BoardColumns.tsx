@@ -28,6 +28,7 @@ import { SortableCard } from "@/components/cards/SortableCard";
 import { AddColumnForm } from "@/components/columns/AddColumnForm";
 import { ColumnDropZone } from "@/components/columns/ColumnDropZone";
 import { ColumnHeader } from "@/components/columns/ColumnHeader";
+import { apiPatch } from "@/lib/api-client";
 
 type Column = {
   id: string;
@@ -244,36 +245,22 @@ export function BoardColumns({ boardId, columns: columnsFromServer }: Props) {
         .find((column) => column.id === columnId)
         ?.cards.map((card) => card.id) ?? [];
 
-    // fetch behaves in a way that trips everyone up:
-    //   - the server answers 404 / 500 -> it RESOLVES, with response.ok false
-    //   - the server can't be reached  -> it THROWS
-    // Only checking response.ok covers the first case. Without this try/catch,
-    // an unreachable server would throw right here and the revert below would
-    // never run: the card would stay where it was dropped, as if it had been
-    // saved. Exactly the situation this code exists for.
-    let response: Response;
-
-    try {
-      response = await fetch(`/api/columns/${columnId}/cards/reorder`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderedIds }),
-      });
-    } catch {
-      setIsReordering(false);
-      setColumns(snapshot);
-      setError("Could not reach the server. The card has been put back.");
-      return;
-    }
+    // apiPatch never throws: a server that is down and a server that says no
+    // both come back as { ok: false }. Handling only one of those was a real
+    // bug here - with the server stopped, the card stayed where it was
+    // dropped as if it had been saved.
+    const result = await apiPatch(
+      `/api/columns/${columnId}/cards/reorder`,
+      { orderedIds },
+    );
 
     setIsReordering(false);
 
-    if (!response.ok) {
-      // Rejected: put the board back the way it was and say so. This is the
-      // price of being optimistic - for a moment the screen showed something
-      // that was not true.
+    if (!result.ok) {
+      // Put the board back the way it was and say so. This is the price of
+      // being optimistic: for a moment the screen showed something untrue.
       setColumns(snapshot);
-      setError("Could not move the card. It has been put back.");
+      setError(`${result.error} The card has been put back.`);
       return;
     }
 
@@ -299,24 +286,14 @@ export function BoardColumns({ boardId, columns: columnsFromServer }: Props) {
     setError(null);
     setIsReordering(true);
 
-    let response: Response;
-
-    try {
-      response = await fetch(`/api/boards/${boardId}/columns/reorder`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderedIds }),
-      });
-    } catch {
-      setIsReordering(false);
-      setError("Could not reach the server");
-      return;
-    }
+    const result = await apiPatch(`/api/boards/${boardId}/columns/reorder`, {
+      orderedIds,
+    });
 
     setIsReordering(false);
 
-    if (!response.ok) {
-      setError("Could not reorder the columns");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 

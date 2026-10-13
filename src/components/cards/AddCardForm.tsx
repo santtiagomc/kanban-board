@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { inputClass, secondaryButtonClass } from "@/components/ui/styles";
+import { apiPost } from "@/lib/api-client";
 import { cardSchema } from "@/lib/validations";
 
 export function AddCardForm({ columnId }: { columnId: string }) {
@@ -36,16 +37,14 @@ export function AddCardForm({ columnId }: { columnId: string }) {
 
     setIsSubmitting(true);
 
-    const response = await fetch(`/api/columns/${columnId}/cards`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: parsed.data.title }),
+    const result = await apiPost(`/api/columns/${columnId}/cards`, {
+      title: parsed.data.title,
     });
 
     setIsSubmitting(false);
 
-    if (!response.ok) {
-      setError("Could not add the card");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 

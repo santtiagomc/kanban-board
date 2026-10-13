@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { buttonClass, formErrorClass, inputClass } from "@/components/ui/styles";
+import { apiPost } from "@/lib/api-client";
 import { boardSchema } from "@/lib/validations";
 
 export function CreateBoardForm() {
@@ -27,17 +28,12 @@ export function CreateBoardForm() {
 
     setIsSubmitting(true);
 
-    const response = await fetch("/api/boards", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsed.data),
-    });
+    const result = await apiPost("/api/boards", parsed.data);
 
     setIsSubmitting(false);
 
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      setError(data?.error ?? "Could not create the board");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 

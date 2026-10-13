@@ -11,11 +11,20 @@ import {
   labelClass,
   secondaryButtonClass,
 } from "@/components/ui/styles";
+import { apiDelete, apiGet, apiPatch } from "@/lib/api-client";
 import { cardSchema } from "@/lib/validations";
 
 type Props = {
   cardId: string;
   onClose: () => void;
+};
+
+// What GET /api/cards/:cardId returns. Dates travel as ISO strings over JSON.
+type CardDetail = {
+  id: string;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
 };
 
 export function CardModal({ cardId, onClose }: Props) {
@@ -38,23 +47,21 @@ export function CardModal({ cardId, onClose }: Props) {
     let cancelled = false;
 
     async function load() {
-      const response = await fetch(`/api/cards/${cardId}`);
+      const result = await apiGet<CardDetail>(`/api/cards/${cardId}`);
 
       if (cancelled) {
         return;
       }
 
-      if (!response.ok) {
-        setError("Could not load the card");
+      if (!result.ok) {
+        setError(result.error);
+        // Leaving isLoading true here would be the bug: a permanent
+        // "Loading..." with no explanation. Failing IS finishing.
         setIsLoading(false);
         return;
       }
 
-      const card = await response.json();
-
-      if (cancelled) {
-        return;
-      }
+      const card = result.data;
 
       setTitle(card.title);
       setDescription(card.description ?? "");
@@ -105,20 +112,16 @@ export function CardModal({ cardId, onClose }: Props) {
 
     setIsSaving(true);
 
-    const response = await fetch(`/api/cards/${cardId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: parsed.data.title,
-        description: parsed.data.description ?? null,
-        dueDate: dueDate === "" ? null : dueDate,
-      }),
+    const result = await apiPatch(`/api/cards/${cardId}`, {
+      title: parsed.data.title,
+      description: parsed.data.description ?? null,
+      dueDate: dueDate === "" ? null : dueDate,
     });
 
     setIsSaving(false);
 
-    if (!response.ok) {
-      setError("Could not save the card");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 
@@ -135,12 +138,12 @@ export function CardModal({ cardId, onClose }: Props) {
 
     setIsSaving(true);
 
-    const response = await fetch(`/api/cards/${cardId}`, { method: "DELETE" });
+    const result = await apiDelete(`/api/cards/${cardId}`);
 
     setIsSaving(false);
 
-    if (!response.ok) {
-      setError("Could not delete the card");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 

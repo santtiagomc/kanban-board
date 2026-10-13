@@ -11,6 +11,7 @@ import {
   inputClass,
   labelClass,
 } from "@/components/ui/styles";
+import { apiPost } from "@/lib/api-client";
 import { registerSchema } from "@/lib/validations";
 
 // One optional message per field, e.g. { email: "Please enter a valid email" }
@@ -55,29 +56,25 @@ export function RegisterForm() {
 
     setIsSubmitting(true);
 
-    const response = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsed.data),
-    });
+    const registerResult = await apiPost("/api/register", parsed.data);
 
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-
-      setError(data?.error ?? "Something went wrong. Please try again.");
+    if (!registerResult.ok) {
+      // The message comes from the API itself when it sent one, for example
+      // "That email is already registered".
+      setError(registerResult.error);
       setIsSubmitting(false);
       return;
     }
 
     // The account exists now, but creating it did not sign anyone in: those are
     // two separate operations. Doing it here saves the user typing it twice.
-    const result = await signIn("credentials", {
+    const signInResult = await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
       redirect: false,
     });
 
-    if (result?.error) {
+    if (signInResult?.error) {
       // Rare: the account was created but signing in failed. Send them to the
       // sign-in page rather than leaving them stuck on a form that "worked".
       router.push("/login");

@@ -9,6 +9,7 @@ import {
   inputClass,
   secondaryButtonClass,
 } from "@/components/ui/styles";
+import { apiDelete, apiPatch } from "@/lib/api-client";
 import { boardSchema } from "@/lib/validations";
 
 type Props = {
@@ -41,16 +42,12 @@ export function BoardListItem({ id, title, updatedLabel }: Props) {
 
     setIsBusy(true);
 
-    const response = await fetch(`/api/boards/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsed.data),
-    });
+    const result = await apiPatch(`/api/boards/${id}`, parsed.data);
 
     setIsBusy(false);
 
-    if (!response.ok) {
-      setError("Could not rename the board");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 
@@ -71,12 +68,12 @@ export function BoardListItem({ id, title, updatedLabel }: Props) {
 
     setIsBusy(true);
 
-    const response = await fetch(`/api/boards/${id}`, { method: "DELETE" });
+    const result = await apiDelete(`/api/boards/${id}`);
 
     setIsBusy(false);
 
-    if (!response.ok) {
-      setError("Could not delete the board");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 

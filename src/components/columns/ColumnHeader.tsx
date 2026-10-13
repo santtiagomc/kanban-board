@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { inputClass, secondaryButtonClass } from "@/components/ui/styles";
+import { apiDelete, apiPatch } from "@/lib/api-client";
 import { columnSchema } from "@/lib/validations";
 
 type Props = {
@@ -48,16 +49,12 @@ export function ColumnHeader({
 
     setIsBusy(true);
 
-    const response = await fetch(`/api/columns/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsed.data),
-    });
+    const result = await apiPatch(`/api/columns/${id}`, parsed.data);
 
     setIsBusy(false);
 
-    if (!response.ok) {
-      setError("Could not rename the column");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 
@@ -76,12 +73,12 @@ export function ColumnHeader({
 
     setIsBusy(true);
 
-    const response = await fetch(`/api/columns/${id}`, { method: "DELETE" });
+    const result = await apiDelete(`/api/columns/${id}`);
 
     setIsBusy(false);
 
-    if (!response.ok) {
-      setError("Could not delete the column");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
 
