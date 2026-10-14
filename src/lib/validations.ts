@@ -115,3 +115,42 @@ export const reorderCardsSchema = z.object({
 });
 
 export type ReorderCardsInput = z.infer<typeof reorderCardsSchema>;
+
+// Creating subtasks always takes a LIST of titles, even when there is only
+// one. The manual form sends a list of one; accepting AI suggestions sends
+// several. Both are "add these titles to this card", so one endpoint covers
+// both and they are created in a single transaction.
+export const createSubtasksSchema = z.object({
+  titles: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "Subtask title is required")
+        .max(200, "Subtask title must be 200 characters or fewer"),
+    )
+    .min(1, "At least one subtask is required")
+    .max(10, "No more than 10 subtasks at a time"),
+});
+
+export type CreateSubtasksInput = z.infer<typeof createSubtasksSchema>;
+
+// Updating a subtask covers two different actions: ticking it off and
+// renaming it. Both fields are optional, but sending neither would be a
+// request that asks for nothing, so that is rejected.
+export const updateSubtaskSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "Title is required")
+      .max(200, "Title must be 200 characters or fewer")
+      .optional(),
+    done: z.boolean().optional(),
+  })
+  .refine(
+    (data) => data.title !== undefined || data.done !== undefined,
+    { message: "Send either a title or a done value" },
+  );
+
+export type UpdateSubtaskInput = z.infer<typeof updateSubtaskSchema>;

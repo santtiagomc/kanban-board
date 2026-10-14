@@ -35,6 +35,12 @@ export function getCardForUser(cardId: string, userId: string) {
       title: true,
       description: true,
       dueDate: true,
+      // The modal shows the subtasks too, so they travel together. One query
+      // instead of a second round trip once the modal is already open.
+      subtasks: {
+        orderBy: { position: "asc" },
+        select: { id: true, title: true, done: true },
+      },
     },
   });
 }
