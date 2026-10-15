@@ -33,7 +33,15 @@ export function getBoardForUser(boardId: string, userId: string) {
         // cards. The alternative - fetching cards per column - would fire one
         // query per column, the classic "N+1 queries" problem.
         include: {
-          cards: { orderBy: { position: "asc" } },
+          cards: {
+            orderBy: { position: "asc" },
+            include: {
+              // Only the done flag of each subtask. The board shows "2/5", so
+              // the titles would be dead weight: this brings one boolean per
+              // subtask and the page turns them into the two numbers.
+              subtasks: { select: { done: true } },
+            },
+          },
         },
       },
     },

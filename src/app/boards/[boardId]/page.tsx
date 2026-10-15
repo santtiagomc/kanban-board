@@ -76,6 +76,16 @@ export default async function BoardPage({ params }: Props) {
               // shows a small marker, and sending 2000 characters per card
               // for an icon would bloat the page.
               hasDescription: Boolean(card.description),
+              // null when there are no subtasks, so cards without them show
+              // no badge at all instead of an empty "0/0".
+              subtaskProgress:
+                card.subtasks.length === 0
+                  ? null
+                  : {
+                      done: card.subtasks.filter((subtask) => subtask.done)
+                        .length,
+                      total: card.subtasks.length,
+                    },
             })),
           }))}
         />

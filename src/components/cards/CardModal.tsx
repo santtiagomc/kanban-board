@@ -11,6 +11,7 @@ import {
   labelClass,
   secondaryButtonClass,
 } from "@/components/ui/styles";
+import { SubtaskList, type Subtask } from "@/components/cards/SubtaskList";
 import { apiDelete, apiGet, apiPatch } from "@/lib/api-client";
 import { cardSchema } from "@/lib/validations";
 
@@ -25,6 +26,7 @@ type CardDetail = {
   title: string;
   description: string | null;
   dueDate: string | null;
+  subtasks: Subtask[];
 };
 
 export function CardModal({ cardId, onClose }: Props) {
@@ -36,6 +38,7 @@ export function CardModal({ cardId, onClose }: Props) {
   const [description, setDescription] = useState("");
   // <input type="date"> only speaks "YYYY-MM-DD", never a Date object.
   const [dueDate, setDueDate] = useState("");
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -68,6 +71,7 @@ export function CardModal({ cardId, onClose }: Props) {
       // The API sends an ISO instant ("2026-12-25T00:00:00.000Z"); the date
       // input wants just the first 10 characters.
       setDueDate(card.dueDate ? String(card.dueDate).slice(0, 10) : "");
+      setSubtasks(card.subtasks ?? []);
       setIsLoading(false);
     }
 
@@ -258,6 +262,27 @@ export function CardModal({ cardId, onClose }: Props) {
               </button>
             </div>
           </form>
+        )}
+
+        {/* Outside the form on purpose: SubtaskList has a form of its own, and
+            a form inside another form is invalid HTML.
+
+            Subtasks also save on their own, one request each, with no Save
+            button involved. Ticking a box should not need confirming, and
+            losing those ticks by closing with Cancel would be surprising. */}
+        {!isLoading && (
+          <div className="mt-6 border-t border-slate-200 pt-4">
+            <SubtaskList
+              cardId={cardId}
+              subtasks={subtasks}
+              onSubtasksChange={(next) => {
+                setSubtasks(next);
+                // Keeps the board behind the modal in step: the card shows a
+                // "2/5" counter that has just changed.
+                router.refresh();
+              }}
+            />
+          </div>
         )}
       </div>
     </div>

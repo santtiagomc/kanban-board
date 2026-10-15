@@ -10,6 +10,9 @@ export type CardView = {
   dueLabel: string | null;
   isOverdue: boolean;
   hasDescription: boolean;
+  // Counted on the server. null when the card has no subtasks, so the board
+  // isn't cluttered with "0/0" badges.
+  subtaskProgress: { done: number; total: number } | null;
 };
 
 export function CardItem({
@@ -30,7 +33,7 @@ export function CardItem({
     >
       <p className="text-sm text-slate-800">{card.title}</p>
 
-      {(card.dueLabel || card.hasDescription) && (
+      {(card.dueLabel || card.hasDescription || card.subtaskProgress) && (
         <div className="mt-2 flex items-center gap-2">
           {card.dueLabel && (
             <span
@@ -45,6 +48,19 @@ export function CardItem({
             >
               {card.isOverdue ? "Overdue " : "Due "}
               {card.dueLabel}
+            </span>
+          )}
+
+          {card.subtaskProgress && (
+            <span
+              className={
+                card.subtaskProgress.done === card.subtaskProgress.total
+                  ? "rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700"
+                  : "rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600"
+              }
+              title="Subtasks completed"
+            >
+              &#10003; {card.subtaskProgress.done}/{card.subtaskProgress.total}
             </span>
           )}
 
