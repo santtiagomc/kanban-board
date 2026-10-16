@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   dangerButtonClass,
   inputClass,
@@ -27,6 +28,7 @@ export function BoardListItem({ id, title, updatedLabel }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(title);
   const [isBusy, setIsBusy] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleRename(event: React.FormEvent<HTMLFormElement>) {
@@ -56,16 +58,7 @@ export function BoardListItem({ id, title, updatedLabel }: Props) {
   }
 
   async function handleDelete() {
-    // A plain browser confirm is enough here. Deleting a board also deletes
-    // its columns and cards, so it deserves a stop-and-think moment.
-    const confirmed = window.confirm(
-      `Delete "${title}"? Its columns and cards will be deleted too.`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+    setIsConfirmingDelete(false);
     setIsBusy(true);
 
     const result = await apiDelete(`/api/boards/${id}`);
@@ -150,13 +143,23 @@ export function BoardListItem({ id, title, updatedLabel }: Props) {
         </button>
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => setIsConfirmingDelete(true)}
           disabled={isBusy}
           className={dangerButtonClass}
         >
           {isBusy ? "..." : "Delete"}
         </button>
       </div>
+
+      {isConfirmingDelete && (
+        <ConfirmDialog
+          title="Delete board"
+          message={`"${title}" and all its columns and cards will be deleted. This cannot be undone.`}
+          isBusy={isBusy}
+          onConfirm={handleDelete}
+          onCancel={() => setIsConfirmingDelete(false)}
+        />
+      )}
     </li>
   );
 }

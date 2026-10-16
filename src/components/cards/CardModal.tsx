@@ -12,6 +12,7 @@ import {
   secondaryButtonClass,
 } from "@/components/ui/styles";
 import { SubtaskList, type Subtask } from "@/components/cards/SubtaskList";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { apiDelete, apiGet, apiPatch } from "@/lib/api-client";
 import { cardSchema } from "@/lib/validations";
 
@@ -41,6 +42,7 @@ export function CardModal({ cardId, onClose }: Props) {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   // Fetches the card once, when the modal opens.
   useEffect(() => {
@@ -85,7 +87,10 @@ export function CardModal({ cardId, onClose }: Props) {
   // Escape closes the modal, which is what people expect from a dialog.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      // While the confirmation dialog is open it owns Escape. Both listeners
+      // are active at once, so without this check one key press would cancel
+      // the delete AND close the card behind it.
+      if (event.key === "Escape" && !isConfirmingDelete) {
         onClose();
       }
     }
@@ -95,7 +100,7 @@ export function CardModal({ cardId, onClose }: Props) {
     // Cleanup: without removing the listener, every open modal would leave
     // one behind and they would pile up.
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [onClose, isConfirmingDelete]);
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,12 +139,7 @@ export function CardModal({ cardId, onClose }: Props) {
   }
 
   async function handleDelete() {
-    const confirmed = window.confirm(`Delete "${title}"?`);
-
-    if (!confirmed) {
-      return;
-    }
-
+    setIsConfirmingDelete(false);
     setIsSaving(true);
 
     const result = await apiDelete(`/api/cards/${cardId}`);
@@ -254,7 +254,7 @@ export function CardModal({ cardId, onClose }: Props) {
 
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => setIsConfirmingDelete(true)}
                 disabled={isSaving}
                 className={dangerButtonClass}
               >
@@ -283,6 +283,16 @@ export function CardModal({ cardId, onClose }: Props) {
               }}
             />
           </div>
+        )}
+
+        {isConfirmingDelete && (
+          <ConfirmDialog
+            title="Delete card"
+            message={`"${title}" and its subtasks will be deleted. This cannot be undone.`}
+            isBusy={isSaving}
+            onConfirm={handleDelete}
+            onCancel={() => setIsConfirmingDelete(false)}
+          />
         )}
       </div>
     </div>

@@ -23,6 +23,10 @@ type Props = {
 export function SubtaskList({ cardId, subtasks, onSubtasksChange }: Props) {
   const [newTitle, setNewTitle] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Which subtask is being renamed, and the text being typed. Only one can be
+  // edited at a time, so a single id and a single draft are enough.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +54,49 @@ export function SubtaskList({ cardId, subtasks, onSubtasksChange }: Props) {
     onSubtasksChange(
       subtasks.map((item) => (item.id === subtask.id ? result.data : item)),
     );
+  }
+
+  function startEditing(subtask: Subtask) {
+    setEditingId(subtask.id);
+    setDraftTitle(subtask.title);
+    setError(null);
+  }
+
+  function cancelEditing() {
+    setEditingId(null);
+    setDraftTitle("");
+  }
+
+  async function handleRename(subtask: Subtask) {
+    const title = draftTitle.trim();
+
+    if (title === "" || title === subtask.title) {
+      // Nothing typed, or nothing changed: no request worth making.
+      cancelEditing();
+      return;
+    }
+
+    setError(null);
+    setBusyId(subtask.id);
+
+    // Only the title is sent. The "done" flag arrives as undefined, so the
+    // tick stays exactly as it was - renaming must not untick anything.
+    const result = await apiPatch<Subtask>(`/api/subtasks/${subtask.id}`, {
+      title,
+    });
+
+    setBusyId(null);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    onSubtasksChange(
+      subtasks.map((item) => (item.id === subtask.id ? result.data : item)),
+    );
+
+    cancelEditing();
   }
 
   async function handleDelete(subtask: Subtask) {
@@ -135,28 +182,76 @@ export function SubtaskList({ cardId, subtasks, onSubtasksChange }: Props) {
               id={`subtask-${subtask.id}`}
               checked={subtask.done}
               onChange={() => handleToggle(subtask)}
-              disabled={busyId === subtask.id}
+              disabled={busyId === subtask.id || editingId === subtask.id}
               className="h-4 w-4 rounded border-slate-300"
             />
 
-            <label
-              htmlFor={`subtask-${subtask.id}`}
-              className={`flex-1 text-sm ${
-                subtask.done ? "text-slate-400 line-through" : "text-slate-700"
-              }`}
-            >
-              {subtask.title}
-            </label>
+            {editingId === subtask.id ? (
+              <input
+                type="text"
+                value={draftTitle}
+                onChange={(event) => setDraftTitle(event.target.value)}
+                maxLength={200}
+                autoFocus
+                disabled={busyId === subtask.id}
+                className={`${inputClass} mt-0 flex-1 py-1 text-sm`}
+                aria-label="Subtask title"
+                // Saving on blur too, so clicking elsewhere doesn't quietly
+                // throw the edit away.
+                onBlur={() => handleRename(subtask)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleRename(subtask);
+                  }
 
-            <button
-              type="button"
-              onClick={() => handleDelete(subtask)}
-              disabled={busyId === subtask.id}
-              className="rounded px-1.5 text-slate-400 hover:bg-red-100 hover:text-red-700 disabled:opacity-30"
-              aria-label={`Delete subtask ${subtask.title}`}
-            >
-              &times;
-            </button>
+                  if (event.key === "Escape") {
+                    // The card modal listens for Escape on the window to
+                    // close itself. Stopping the event here means Escape
+                    // cancels the rename without closing the card behind it.
+                    event.stopPropagation();
+                    cancelEditing();
+                  }
+                }}
+              />
+            ) : (
+              <>
+                <label
+                  htmlFor={`subtask-${subtask.id}`}
+                  className={`flex-1 text-sm ${
+                    subtask.done
+                      ? "text-slate-400 line-through"
+                      : "text-slate-700"
+                  }`}
+                >
+                  {subtask.title}
+                </label>
+
+                {/* Renaming gets its own button instead of reusing a click on
+                    the text: that click already belongs to the checkbox, and
+                    taking it away would cost more than it gives. */}
+                <button
+                  type="button"
+                  onClick={() => startEditing(subtask)}
+                  disabled={busyId === subtask.id}
+                  className="rounded px-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:opacity-30"
+                  aria-label={`Rename subtask ${subtask.title}`}
+                  title="Rename"
+                >
+                  &#9998;
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDelete(subtask)}
+                  disabled={busyId === subtask.id}
+                  className="rounded px-1.5 text-slate-400 hover:bg-red-100 hover:text-red-700 disabled:opacity-30"
+                  aria-label={`Delete subtask ${subtask.title}`}
+                >
+                  &times;
+                </button>
+              </>
+            )}
           </li>
         ))}
       </ul>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { inputClass, secondaryButtonClass } from "@/components/ui/styles";
 import { apiDelete, apiPatch } from "@/lib/api-client";
 import { columnSchema } from "@/lib/validations";
@@ -34,6 +35,7 @@ export function ColumnHeader({
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(title);
   const [isBusy, setIsBusy] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleRename(event: React.FormEvent<HTMLFormElement>) {
@@ -63,14 +65,7 @@ export function ColumnHeader({
   }
 
   async function handleDelete() {
-    const confirmed = window.confirm(
-      `Delete "${title}"? Its cards will be deleted too.`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+    setIsConfirmingDelete(false);
     setIsBusy(true);
 
     const result = await apiDelete(`/api/columns/${id}`);
@@ -173,7 +168,7 @@ export function ColumnHeader({
           </button>
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setIsConfirmingDelete(true)}
             disabled={isBusy || isReordering}
             className="rounded px-1.5 text-slate-400 hover:bg-red-100 hover:text-red-700 disabled:opacity-30"
             aria-label={`Delete ${title}`}
@@ -184,6 +179,16 @@ export function ColumnHeader({
       </div>
 
       {error && <p className="mt-1 px-1 text-sm text-red-600">{error}</p>}
+
+      {isConfirmingDelete && (
+        <ConfirmDialog
+          title="Delete column"
+          message={`"${title}" and all its cards will be deleted. This cannot be undone.`}
+          isBusy={isBusy}
+          onConfirm={handleDelete}
+          onCancel={() => setIsConfirmingDelete(false)}
+        />
+      )}
     </div>
   );
 }
