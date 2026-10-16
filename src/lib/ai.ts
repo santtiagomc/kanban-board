@@ -228,6 +228,14 @@ async function geminiSuggestions(
         // too. Too low a limit and the budget runs out mid-thought, leaving
         // an empty reply - which looks like a bug rather than a quota.
         maxOutputTokens: 2048,
+        // These models reason internally before answering, and that reasoning
+        // is most of the wait. Breaking a task into five short steps does not
+        // need it, so the budget is set to zero: the answer comes back in a
+        // couple of seconds instead of fifteen.
+        //
+        // If a model does not support this field the API replies 400, and the
+        // error now carries the body that says so.
+        thinkingConfig: { thinkingBudget: 0 },
         // Asks for JSON instead of prose, so the reply can be parsed.
         responseMimeType: "application/json",
       },

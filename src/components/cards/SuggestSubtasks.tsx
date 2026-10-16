@@ -109,6 +109,15 @@ export function SuggestSubtasks({ cardId, onAccepted }: Props) {
           {isLoading ? "Thinking..." : "Suggest subtasks"}
         </button>
 
+        {/* The model takes a few seconds. Saying so costs one line and keeps
+            the wait from reading as a frozen button - the cheapest fix for
+            slowness you cannot remove. */}
+        {isLoading && (
+          <p className="mt-2 text-xs text-slate-500">
+            This usually takes a few seconds.
+          </p>
+        )}
+
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </div>
     );
