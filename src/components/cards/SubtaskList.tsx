@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { SuggestSubtasks } from "@/components/cards/SuggestSubtasks";
 import { inputClass, secondaryButtonClass } from "@/components/ui/styles";
 import { apiDelete, apiPatch, apiPost } from "@/lib/api-client";
 
@@ -186,6 +187,10 @@ export function SubtaskList({ cardId, subtasks, onSubtasksChange }: Props) {
           {isAdding ? "Adding..." : "Add"}
         </button>
       </form>
+
+      {/* Accepted suggestions come back as the full updated list, the same
+          shape the manual form returns, so it plugs in here unchanged. */}
+      <SuggestSubtasks cardId={cardId} onAccepted={onSubtasksChange} />
     </section>
   );
 }
